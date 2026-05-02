@@ -4,13 +4,17 @@
   "description": "Backend code for the Zune Project which is a video calling webapp built with ReactJS, Nodejs, ExpressJS, WebRTC, Socket.io with some additional libraries",
   "license": "ISC",
   "author": "soumya",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js",
+    "prod": "pm2 start index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.6.1",
     "nodemon": "^3.1.14",
