@@ -2,8 +2,9 @@ import express from "express";
 import 'dotenv/config';
 import mongoose from "mongoose";
 import http from 'node:http';
-import {cors} from "cors";
+import cors from "cors";
 import socketConnection from "./controllers/socketConnection.js";
+import router from "./routes/userRoutes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -15,9 +16,7 @@ app.use(express.json({"limit":"40kb"}));
 app.use(express.urlencoded({extended:true, limit:"40kb"}));
 app.use(cors());
 
-app.get("/", (req, res)=>{
-    res.send("Hello world");
-})
+app.use("/", router);
 
 app.listen(port, async ()=>{
     try{

@@ -1,13 +1,10 @@
 import express from "express";
+import {login, register} from "../controllers/userController.js";
 
 const router = express.Router();
 
-router.get("/login", (req, res)=>{
-    res.send("User route");
-});
-router.get("/register", (req, res)=>{
-    res.send("User route");
-});
+router.post("/login", login);
+router.post("/register",register);
 router.get("/add_to_activity", (req, res)=>{
     res.send("User route");
 });
