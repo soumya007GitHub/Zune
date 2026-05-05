@@ -3,7 +3,7 @@ import 'dotenv/config';
 import mongoose from "mongoose";
 import http from 'node:http';
 import cors from "cors";
-import socketConnection from "./controllers/socketConnection.js";
+import {socketConnection} from "./controllers/socketConnection.js";
 import router from "./routes/userRoutes.js";
 
 const app = express();

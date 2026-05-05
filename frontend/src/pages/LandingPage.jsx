@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 
 export default function LandingPage() {
@@ -53,7 +54,8 @@ export default function LandingPage() {
                     </div>
 
                     <button className="hidden md:block px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-white hover:text-blue-600 transition">
-                        Sign Up
+                        <Link to="/auth">
+                            Sign Up</Link>
                     </button>
 
                     <div className="md:hidden cursor-pointer" onClick={() => setOpen(!open)}>
@@ -69,7 +71,8 @@ export default function LandingPage() {
                         <p>Solutions</p>
                         <p>Pricing</p>
                         <button className="px-5 py-2 rounded-md bg-blue-600 text-white">
-                            Sign Up
+                            <Link to="/auth">
+                            Sign Up</Link>
                         </button>
                     </div>
                 )}
@@ -89,7 +92,8 @@ export default function LandingPage() {
                 </p>
 
                 <button className="w-1/2 sm:w-1/3 mx-auto px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-white hover:text-blue-600 transition flex flex-row justify-center items-center">
-                    Get Started <ArrowUpRight className="inline" />
+                <Link to="/auth">
+                    Get Started <ArrowUpRight className="inline" /></Link>
                 </button>
 
                 <div className="overflow-hidden mt-16 py-10">
@@ -175,21 +179,21 @@ export default function LandingPage() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-6">
 
                         <div className="w-[90%] mt-10 md:mt-0 p-6 bg-gray-50 rounded-xl shadow-sm flex flex-col justify-center items-center mx-auto">
-                            <div class="size-15 md:size-24 rounded-full bg-conic-180 from-indigo-600 via-indigo-50 to-indigo-600"></div>
+                            <div className="size-15 md:size-24 rounded-full bg-conic-180 from-indigo-600 via-indigo-50 to-indigo-600"></div>
                             <p className="text-yellow-500 mb-3">★★★★</p>
                             <p className="text-sm text-gray-600">Zune completely transformed how our remote team communicates. The video quality and chat integration are flawless.</p>
                             <p className="mt-4 text-sm font-medium">Amit Sharma</p>
                         </div>
 
                         <div className="w-[90%] mt-10 md:mt-0 p-6 bg-gray-50 rounded-xl shadow-sm flex flex-col justify-center items-center mx-auto">
-                            <div class="size-15 md:size-24 rounded-full bg-conic from-blue-600 to-sky-400 to-50%"></div>
+                            <div className="size-15 md:size-24 rounded-full bg-conic from-blue-600 to-sky-400 to-50%"></div>
                             <p className="text-yellow-500 mb-3">★★★★★</p>
                             <p className="text-sm text-gray-600">We switched from multiple tools to Zune and everything just works better. Meetings and collaboration feel effortless now.</p>
                             <p className="mt-4 text-sm font-medium">Sarah Johnson</p>
                         </div>
 
                         <div className="w-[90%] mt-10 md:mt-0 p-6 bg-gray-50 rounded-xl shadow-sm flex flex-col justify-center items-center mx-auto">
-                            <div class="size-15 md:size-24 rounded-full bg-conic-180 from-teal-600 via-indigo-50 to-teal-600"></div>
+                            <div className="size-15 md:size-24 rounded-full bg-conic-180 from-teal-600 via-indigo-50 to-teal-600"></div>
                             <p className="text-yellow-500 mb-3">★★★★</p>
                             <p className="text-sm text-gray-600">The simplicity and performance of Zune is unmatched. Screen sharing is smooth and reliable every single time.</p>
                             <p className="mt-4 text-sm font-medium">Rahul Verma</p>

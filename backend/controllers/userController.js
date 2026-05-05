@@ -19,7 +19,7 @@ const login = async(req, res)=>{
             const token = jwt.sign(
                 {userId: userExists._id, username: userExists.username},
                 process.env.JWT_SECRET,
-                {expiresIn: '1h'} 
+                {expiresIn: '7d'} 
             );
             userExists.token = token;
             await userExists.save();
@@ -51,5 +51,20 @@ const register = async (req, res) => {
         return res.status(400).json(err);
     }
 };
+const verifyToken = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
 
-export {login,register};
+  if (!token) {
+    return res.status(401).json({ msg: "No token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ msg: "Invalid token" });
+  }
+};
+
+export {login,register,verifyToken};
