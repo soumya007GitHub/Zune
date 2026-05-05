@@ -16,7 +16,7 @@ const Auth = () => {
       });
 
       if (res.data.valid) {
-        window.location.href = "http://localhost:5173/dashboard";
+        window.location.href = "http://localhost:5173/videoMeet";
       }
     } catch (err) {
       console.log("Invalid token");
@@ -79,7 +79,7 @@ const Auth = () => {
         setMessage("Login successful");
 
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = "/videoMeet";
         }, 1000);
       } else {
         setMessage("Account created successfully");
