@@ -1,8 +1,3 @@
-let IS_PROD = false;
-const server = IS_PROD ?
-    "" :
-
-    "http://localhost:8080"
-
+const server = import.meta.env.VITE_BACKEND_URL;
 
 export default server;

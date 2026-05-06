@@ -18,7 +18,7 @@ app.use(cors());
 
 app.use("/", router);
 
-app.listen(port, async ()=>{
+server.listen(port, async ()=>{
     try{
         await mongoose.connect(mongo_url);
         console.log("Connected to MongoDB!");

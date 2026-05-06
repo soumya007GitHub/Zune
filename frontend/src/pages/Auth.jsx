@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import server from "../environment";
 
 const Auth = () => {
   useEffect(() => {
@@ -9,7 +10,7 @@ const Auth = () => {
     if (!token) return;
 
     try {
-      const res = await axios.get("http://localhost:8080/verifyToken", {
+      const res = await axios.get(`${server}verifyToken`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,8 +59,8 @@ const Auth = () => {
       setLoading(true);
 
       const url = isLogin
-        ? "http://localhost:8080/login"
-        : "http://localhost:8080/register";
+        ? `${server}login`
+        : `${server}register`;
 
       const payload = isLogin
         ? {

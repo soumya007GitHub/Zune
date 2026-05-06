@@ -1,11 +1,55 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X, CameraOff, Camera, MicOff, Mic, ScreenShareOff, ScreenShare, MessagesSquare, PhoneOff } from "lucide-react";
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { X, CameraOff, Camera, MicOff, Mic, ScreenShareOff, ScreenShare, MessagesSquare, PhoneOff, Maximize2, Minimize2 } from "lucide-react";
 import io from "socket.io-client";
+import { useNavigate } from 'react-router-dom';
 import server from '../environment';
 
 const server_url = server;
 
 var connections = {};
+
+const LocalVideoTile = React.memo(function LocalVideoTile({ localVideoref }) {
+    return (
+        <div className="relative w-full h-full bg-black rounded-xl overflow-hidden border border-white/10 group">
+            <video
+                ref={localVideoref}
+                autoPlay
+                muted
+                className="w-full h-full object-cover"
+            />
+            <span className="absolute bottom-2 left-2 text-xs bg-black/60 px-2 py-1 rounded">
+                You
+            </span>
+        </div>
+    );
+});
+
+const RemoteVideoTile = React.memo(function RemoteVideoTile({ video, onZoom }) {
+    return (
+        <div
+            className="relative w-full h-full bg-black rounded-xl overflow-hidden border border-white/10 group"
+        >
+            <video
+                data-socket={video.socketId}
+                ref={(ref) => {
+                    if (ref && video.stream) {
+                        ref.srcObject = video.stream;
+                    }
+                }}
+                autoPlay
+                className="w-full h-full object-cover"
+            />
+            <button
+                onClick={() => onZoom(video.socketId)}
+                className="absolute top-2 right-2 p-2 bg-blue-600 hover:bg-blue-700 rounded opacity-0 group-hover:opacity-100 transition"
+            >
+                <Maximize2 size={18} />
+            </button>
+        </div>
+    );
+}, (prevProps, nextProps) => {
+    return prevProps.video.socketId === nextProps.video.socketId && prevProps.video.stream === nextProps.video.stream && prevProps.onZoom === nextProps.onZoom;
+});
 
 const peerConfigConnections = {
     "iceServers": [
@@ -14,6 +58,13 @@ const peerConfigConnections = {
 }
 
 export default function VideoMeet() {
+    const navigate = useNavigate();
+
+    // =========================
+    // AUTHENTICATION
+    // =========================
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
     // =========================
     // SOCKET REFERENCES
@@ -49,7 +100,14 @@ export default function VideoMeet() {
     // USER INFO
     // =========================
     let [username, setUsername] = useState("");         // User's name
+    let [roomId, setRoomId] = useState("");             // Room ID for the meeting
     let [askForUsername, setAskForUsername] = useState(true); // Show lobby or not
+
+
+    // =========================
+    // ZOOM VIDEO
+    // =========================
+    let [zoomedVideoId, setZoomedVideoId] = useState(null);  // Socket ID of zoomed video
 
 
     // =========================
@@ -71,11 +129,27 @@ export default function VideoMeet() {
     // =========================
     let [videos, setVideos] = useState([]);   // List of remote users' video streams
 
+    const handleZoomVideo = useCallback((id) => {
+        setZoomedVideoId(id);
+    }, []);
+
+    // Authentication check
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            navigate("/auth");
+        } else {
+            setIsAuthenticated(true);
+        }
+        setIsCheckingAuth(false);
+    }, [navigate]);
+
     useEffect(() => {
         // when first time component loads ask for video and audio permissions and show them in the UI
-        getPermissions();
-
-    }, []);
+        if (isAuthenticated) {
+            getPermissions();
+        }
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (video !== undefined && audio !== undefined) {
@@ -289,7 +363,7 @@ export default function VideoMeet() {
         socketRef.current.on('signal', gotMessageFromServer)
 
         socketRef.current.on('connect', () => {
-            socketRef.current.emit('join-call', window.location.href)
+            socketRef.current.emit('join-call', roomId)
             socketIdRef.current = socketRef.current.id
 
             socketRef.current.on('chat-message', addMessage)
@@ -419,6 +493,26 @@ export default function VideoMeet() {
         window.location.href = "/videoMeet"
     }
 
+    const calculateGridCols = () => {
+        const totalVideos = videos.length + 1; // +1 for local video
+
+        if (totalVideos === 1) return "grid-cols-1";
+        if (totalVideos === 2) return "grid-cols-2";
+        if (totalVideos === 3) return "grid-cols-3";
+        if (totalVideos === 4) return "grid-cols-2";
+        return "grid-cols-3";
+    };
+
+    const calculateRowSize = () => {
+        const totalVideos = videos.length + 1;
+
+        if (totalVideos === 1) return "auto-rows-[calc(100vh-200px)]";
+        if (totalVideos === 2) return "auto-rows-[calc(50vh-120px)]";
+        if (totalVideos === 3) return "auto-rows-[calc(50vh-120px)]";
+        if (totalVideos === 4) return "auto-rows-[calc(50vh-120px)]";
+        return "auto-rows-[300px]";
+    };
+
     let openChat = () => {
         setModal(true);
         setNewMessages(0);
@@ -438,9 +532,27 @@ export default function VideoMeet() {
     }
 
     let connect = async () => {
+        if (!username.trim()) {
+            alert("Please enter your name");
+            return;
+        }
+
+        if (!roomId.trim()) {
+            alert("Please enter a room ID to join the meeting.");
+            return;
+        }
+
         setAskForUsername(false);
         await getMedia();
     };
+
+    if (!isAuthenticated || isCheckingAuth) {
+        return (
+            <div className="min-h-screen bg-[#08123b] flex items-center justify-center">
+                <p className="text-white text-xl">Loading...</p>
+            </div>
+        );
+    }
 
 
     return (
@@ -463,6 +575,14 @@ export default function VideoMeet() {
                             className="w-full px-4 py-3 rounded-lg bg-transparent border border-white/20 focus:outline-none focus:border-[#8582dd]"
                         />
 
+                        <input
+                            value={roomId}
+                            onChange={(e) => setRoomId(e.target.value)}
+                            placeholder="Enter room ID"
+                            className="w-full px-4 py-3 mt-3 rounded-lg bg-transparent border border-white/20 focus:outline-none focus:border-[#8582dd]"
+                            required
+                        />
+
                         <button
                             onClick={connect}
                             className="mt-4 w-full bg-blue-600 border border-blue-600 py-3 rounded-lg transition hover:bg-white hover:text-blue-600"
@@ -483,6 +603,25 @@ export default function VideoMeet() {
             ) : (
                 // ================= MEETING =================
                 <div className="flex flex-col flex-1 relative overflow-hidden">
+
+                    {/* ================= ROOM ID HEADER ================= */}
+                    <div className="bg-[#0c143d] border-b border-white/10 px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-400">Room ID:</span>
+                            <span className="font-mono text-sm font-semibold text-white bg-white/10 px-3 py-1 rounded">
+                                {roomId}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(roomId);
+                                alert("Room ID copied to clipboard!");
+                            }}
+                            className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition"
+                        >
+                            Copy
+                        </button>
+                    </div>
 
                     {/* ================= CHAT PANEL (RESPONSIVE) ================= */}
                     {showModal && (
@@ -534,7 +673,7 @@ export default function VideoMeet() {
                                 />
                                 <button
                                     onClick={sendMessage}
-                                    className="bg-blue-600 px-4 rounded-md"
+                                    className="h-9 px-4 rounded-md bg-blue-600 hover:bg-blue-700 transition whitespace-nowrap"
                                 >
                                     Send
                                 </button>
@@ -542,51 +681,57 @@ export default function VideoMeet() {
                         </div>
                     )}
 
-                    {/* ================= VIDEO GRID ================= */}
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-2 md:p-3 overflow-auto auto-rows-[180px]">
-
-                        {/* LOCAL VIDEO */}
-                        <div className="relative w-full h-full bg-black rounded-xl overflow-hidden border border-white/10">
-                            <video
-                                ref={localVideoref}
-                                autoPlay
-                                muted
-                                className="w-full h-full object-cover"
-                            />
-                            <span className="absolute bottom-2 left-2 text-xs bg-black/60 px-2 py-1 rounded">
-                                You
-                            </span>
-                        </div>
-                        {/* REMOTE USERS */}
-                        {videos.map((video) => (
-                            <div
-                                key={video.socketId}
-                                className="
-                relative w-full sm:w-[48%] md:w-[300px]
-                aspect-video
-                bg-black rounded-xl overflow-hidden border border-white/10
-              "
-                            >
-                                <video
-                                    data-socket={video.socketId}
-                                    ref={(ref) => {
-                                        if (ref && video.stream) {
-                                            ref.srcObject = video.stream;
-                                        }
-                                    }}
-                                    autoPlay
-                                    className="w-full h-full object-cover"
-                                />
+                    {/* ================= ZOOMED VIDEO MODAL ================= */}
+                    {zoomedVideoId && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                            <div className="relative w-full h-full max-w-5xl max-h-screen bg-black rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => setZoomedVideoId(null)}
+                                    className="absolute top-4 right-4 z-60 p-2 bg-red-600 hover:bg-red-700 rounded-full transition"
+                                >
+                                    <Minimize2 size={24} />
+                                </button>
+                                {zoomedVideoId === 'local' ? (
+                                    <video
+                                        ref={localVideoref}
+                                        autoPlay
+                                        muted
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    videos.map((video) => (
+                                        video.socketId === zoomedVideoId && (
+                                            <video
+                                                key={video.socketId}
+                                                ref={(ref) => {
+                                                    if (ref && video.stream) {
+                                                        ref.srcObject = video.stream;
+                                                    }
+                                                }}
+                                                autoPlay
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )
+                                    ))
+                                )}
                             </div>
+                        </div>
+                    )}
+
+                    {/* ================= VIDEO GRID ================= */}
+                    <div className={`flex-1 grid ${calculateGridCols()} ${calculateRowSize()} gap-2 md:gap-3 p-2 md:p-3 overflow-auto`}>
+                        <LocalVideoTile localVideoref={localVideoref} onZoom={handleZoomVideo} />
+                        {videos.map((video) => (
+                            <RemoteVideoTile key={video.socketId} video={video} onZoom={handleZoomVideo} />
                         ))}
                     </div>
 
                     {/* ================= CONTROLS ================= */}
                     <div className="
-          h-auto md:h-20
+          h-16
           bg-[#0c143d]
           border-t border-white/10
-          flex flex-wrap md:flex-nowrap
+          flex
           items-center justify-center gap-2 md:gap-3
           px-2 py-2
           overflow-x-auto
@@ -594,39 +739,39 @@ export default function VideoMeet() {
 
                         <button
                             onClick={handleVideo}
-                            className="px-3 md:px-4 py-2 text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
+                            className="h-10 px-3 md:px-4 flex items-center justify-center text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
                         >
-                            {video ? <CameraOff /> : <Camera />}
+                            {video ? <CameraOff size={20} /> : <Camera size={20} />}
                         </button>
 
                         <button
                             onClick={handleAudio}
-                            className="px-3 md:px-4 py-2 text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
+                            className="h-10 px-3 md:px-4 flex items-center justify-center text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
                         >
-                            {audio ? <MicOff /> : <Mic />}
+                            {audio ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
 
                         {screenAvailable && (
                             <button
                                 onClick={handleScreen}
-                                className="px-3 md:px-4 py-2 text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
+                                className="h-10 px-3 md:px-4 flex items-center justify-center text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
                             >
-                                {screen ? <ScreenShareOff /> : <ScreenShare />}
+                                {screen ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
                             </button>
                         )}
 
                         <button
                             onClick={() => setModal(!showModal)}
-                            className="px-3 md:px-4 py-2 text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
+                            className="h-10 px-3 md:px-4 flex items-center justify-center gap-1 text-xs md:text-sm rounded-md bg-blue-600 border border-blue-600 whitespace-nowrap hover:bg-white hover:text-blue-600 transition"
                         >
-                            <MessagesSquare /> {newMessages > 0 && `(${newMessages})`}
+                            <MessagesSquare size={20} /> {newMessages > 0 && `(${newMessages})`}
                         </button>
 
                         <button
                             onClick={handleEndCall}
-                            className="px-4 md:px-5 py-2 text-xs md:text-sm rounded-md bg-red-600 hover:bg-red-700 whitespace-nowrap"
+                            className="h-10 px-4 md:px-5 flex items-center justify-center text-xs md:text-sm rounded-md bg-red-600 hover:bg-red-700 whitespace-nowrap transition"
                         >
-                            <PhoneOff />
+                            <PhoneOff size={20} />
                         </button>
 
                     </div>
