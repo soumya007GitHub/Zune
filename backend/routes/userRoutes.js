@@ -3,6 +3,10 @@ import {login, register, verifyToken} from "../controllers/userController.js";
 
 const router = express.Router();
 
+router.get("/", (req, res)=>{
+    res.json("Server is running on port 8080");
+})
+
 router.post("/login", login);
 router.post("/register",register);
 router.get("/verifyToken", verifyToken, (req, res) => {
