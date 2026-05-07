@@ -31,8 +31,8 @@ const login = async(req, res)=>{
             return res.status(401).json({msg: "Password is incorrect"});
         }
     }catch(err){
-        console.log(err);
-        return res.status(400).json({msg: "Something went wrong"});
+        console.log("LOGIN ERROR:", err);
+    return res.status(500).json({ msg: "Server error", error: err.message });
     }
 }
 const register = async (req, res) => {
