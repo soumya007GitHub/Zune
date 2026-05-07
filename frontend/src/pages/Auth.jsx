@@ -17,7 +17,7 @@ const Auth = () => {
       });
 
       if (res.data.valid) {
-        window.location.href = "http://localhost:5173/videoMeet";
+        window.location.href = "http://https://main.d2fyugyyaiab9s.amplifyapp.com//videoMeet";
       }
     } catch (err) {
       console.log("Invalid token");
