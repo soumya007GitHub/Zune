@@ -6,53 +6,50 @@ Zune is a full-stack real-time video conferencing web application built with Rea
 
 ## Live Demo
 
-Frontend: https://main.d2fyugyyaiab9s.amplifyapp.com/
-
-Backend API: https://zune.onrender.com
+Frontend: https://main.d2fyugyyaiab9s.amplifyapp.com/  
+Backend API: https://zune.onrender.com  
 
 ---
 
 ## Features
 
-- User authentication using JWT
-- Secure password hashing with bcrypt
-- Real-time video conferencing using WebRTC
-- Real-time signaling using Socket.io
-- Peer-to-peer communication
-- RESTful backend APIs
+- User authentication using JWT  
+- Secure password hashing using bcrypt  
+- Real-time video conferencing using WebRTC  
+- Real-time signaling using Socket.io  
+- Peer-to-peer communication  
+- RESTful API architecture  
 
 ---
 
 ## Tech Stack
 
-### Frontend
 
-https://skillicons.dev/icons?i=react,javascript,tailwind
-
-### Backend
-
-https://skillicons.dev/icons?i=nodejs,express,sequelize,websocket
-
-### Real-Time Layer
-
-https://skillicons.dev/icons?i=socketio,webrtc
-
-### Database
-
-https://skillicons.dev/icons?i=mongodb
-
-### Tools & Deployment
-
-https://skillicons.dev/icons?i=aws,git,github
+<p>
+  <img src="https://skillicons.dev/icons?i=react" />
+  <img src="https://skillicons.dev/icons?i=javascript" />
+  <img src="https://skillicons.dev/icons?i=tailwind" />
+  <img src="https://skillicons.dev/icons?i=nodejs" />
+  <img src="https://skillicons.dev/icons?i=express" />
+  <img src="https://socket.io/images/logo-dark.svg" width="40"/>
+  <img src="https://www.gstatic.com/devrel-devsite/prod/v78ce60439c72b9da3632137223a86ae38b78a872a1f6dee1b5c1c8cfa57fe81d/webrtc/images/lockup.svg" width="140" style="margin-left:5px;"/>
+  <img src="https://skillicons.dev/icons?i=mongodb" />
+  <img src="https://skillicons.dev/icons?i=aws" />
+  <img src="https://skillicons.dev/icons?i=git" />
+  <img src="https://skillicons.dev/icons?i=github" />
+</p>
 
 ---
 
 ## Architecture
 
 Frontend (React on AWS Amplify)  
-→ Backend API (Node.js + Express on Render)  
-→ MongoDB Database  ( on MongoDB Atlas )
-→ WebRTC Peer-to-Peer Connection  
+↓  
+Backend (Node.js + Express on Render)  
+↓  
+MongoDB Atlas  
+↓  
+WebRTC Peer-to-Peer Connection  
 
 ---
 
@@ -66,9 +63,13 @@ README.md
 
 ## Environment Variables
 
-Backend:
+### Frontend
 
-PORT=8080
+VITE_BACKEND_URL=your_backend_url
+
+### Backend
+
+PORT=8080 
 MONGO_URL=your_mongodb_connection_string  
 JWT_SECRET=your_secret_key  
 
@@ -76,19 +77,19 @@ JWT_SECRET=your_secret_key
 
 ## Authentication Flow
 
-- User registers or logs in  
-- Password is hashed using bcrypt  
-- JWT token is generated on login  
-- Token stored in localStorage  
-- Token used for protected routes  
+1. User registers or logs in  
+2. Password is hashed using bcrypt  
+3. JWT token is generated  
+4. Token stored in localStorage  
+5. Token used for protected routes  
 
 ---
 
 ## Real-Time Communication
 
 - Socket.io handles signaling  
-- WebRTC creates peer-to-peer video connection  
-- STUN servers handle NAT traversal  
+- WebRTC establishes peer-to-peer connection  
+- STUN servers used for NAT traversal  
 
 ---
 
