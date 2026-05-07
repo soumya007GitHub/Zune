@@ -14,7 +14,14 @@ const mongo_url = process.env.MONGO_URL;
 
 app.use(express.json({"limit":"40kb"}));
 app.use(express.urlencoded({extended:true, limit:"40kb"}));
-app.use(cors());
+app.use(cors({
+  origin: 'https://main.d2fyugyyaiab9s.amplifyapp.com',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+app.options('*', cors());
 
 app.use("/", router);
 
