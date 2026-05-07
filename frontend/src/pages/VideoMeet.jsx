@@ -129,7 +129,7 @@ export default function VideoMeet() {
     // =========================
     // REMOTE VIDEO STREAMS
     // =========================
-    let [videos, setVideos] = useState([]);   // List of remote users' video streams
+    let [videos, setVideos] = useState(new Map());   // Map of remote users' video streams by socketId
 
     const handleZoomVideo = useCallback((id) => {
         setZoomedVideoId(id);
@@ -394,7 +394,12 @@ export default function VideoMeet() {
             socketRef.current.on('chat-message', addMessage)
 
             socketRef.current.on('user-left', (id) => {
-                setVideos((videos) => videos.filter((video) => video.socketId !== id))
+                setVideos((videos) => {
+                    const newVideos = new Map(videos);
+                    newVideos.delete(id);
+                    videoRef.current = Array.from(newVideos.values());
+                    return newVideos;
+                });
             })
 
             socketRef.current.on('user-joined', (id, clients) => {
@@ -410,16 +415,15 @@ export default function VideoMeet() {
 
                     // Wait for their video stream
                     connections[socketListId].ontrack = (event) => {
-                        let videoExists = videoRef.current.find(video => video.socketId === socketListId);
+                        if (socketListId === socketIdRef.current) return; // Don't add local video to remote videos
 
-                        if (videoExists) {
+                        if (videos.has(socketListId)) {
                             // Update the stream of the existing video
                             setVideos(videos => {
-                                const updatedVideos = videos.map(video =>
-                                    video.socketId === socketListId ? { ...video, stream: event.streams[0] } : video
-                                );
-                                videoRef.current = updatedVideos;
-                                return updatedVideos;
+                                const newVideos = new Map(videos);
+                                newVideos.set(socketListId, { ...newVideos.get(socketListId), stream: event.streams[0] });
+                                videoRef.current = Array.from(newVideos.values());
+                                return newVideos;
                             });
                         } else {
                             // Create a new video
@@ -432,9 +436,10 @@ export default function VideoMeet() {
                             };
 
                             setVideos(videos => {
-                                const updatedVideos = [...videos, newVideo];
-                                videoRef.current = updatedVideos;
-                                return updatedVideos;
+                                const newVideos = new Map(videos);
+                                newVideos.set(socketListId, newVideo);
+                                videoRef.current = Array.from(newVideos.values());
+                                return newVideos;
                             });
                         }
                     };
@@ -527,7 +532,7 @@ export default function VideoMeet() {
     }
 
     const calculateGridCols = () => {
-        const totalVideos = videos.length + 1; // +1 for local video
+        const totalVideos = videos.size + 1; // +1 for local video
 
         if (totalVideos === 1) return "grid-cols-1";
         if (totalVideos === 2) return "grid-cols-2";
@@ -537,7 +542,7 @@ export default function VideoMeet() {
     };
 
     const calculateRowSize = () => {
-        const totalVideos = videos.length + 1;
+        const totalVideos = videos.size + 1;
 
         if (totalVideos === 1) return "auto-rows-[calc(100vh-200px)]";
         if (totalVideos === 2) return "auto-rows-[calc(50vh-120px)]";
@@ -744,7 +749,7 @@ export default function VideoMeet() {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    videos.map((video) => (
+                                    Array.from(videos.values()).map((video) => (
                                         video.socketId === zoomedVideoId && (
                                             <video
                                                 key={video.socketId}
@@ -767,7 +772,7 @@ export default function VideoMeet() {
                     {/* ================= VIDEO GRID ================= */}
                     <div className={`flex-1 grid ${calculateGridCols()} ${calculateRowSize()} gap-2 md:gap-3 p-2 md:p-3 overflow-auto`}>
                         <LocalVideoTile localVideoref={localVideoref} onZoom={handleZoomVideo} />
-                        {videos.map((video) => (
+                        {Array.from(videos.values()).map((video) => (
                             <RemoteVideoTile key={video.socketId} video={video} onZoom={handleZoomVideo} />
                         ))}
                     </div>
