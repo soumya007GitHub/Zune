@@ -15,6 +15,7 @@ const LocalVideoTile = React.memo(function LocalVideoTile({ localVideoref }) {
                 ref={localVideoref}
                 autoPlay
                 muted
+                playsInline
                 className="w-full h-full object-cover"
             />
             <span className="absolute bottom-2 left-2 text-xs bg-black/60 px-2 py-1 rounded">
@@ -37,6 +38,7 @@ const RemoteVideoTile = React.memo(function RemoteVideoTile({ video, onZoom }) {
                     }
                 }}
                 autoPlay
+                playsInline
                 className="w-full h-full object-cover"
             />
             <button
@@ -167,8 +169,13 @@ export default function VideoMeet() {
     // handles permissions for video, audio, screen share
     const getPermissions = async () => {
         try {
-            // Video permission
-            const videoPermission = await navigator.mediaDevices.getUserMedia({ video: true });
+            // Video permission with mobile-friendly constraints
+            const videoConstraints = {
+                width: { ideal: 640, max: 1280 },
+                height: { ideal: 480, max: 720 },
+                frameRate: { ideal: 15, max: 30 }
+            };
+            const videoPermission = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
             if (videoPermission) {
                 setVideoAvailable(true);
             } else {
@@ -190,10 +197,10 @@ export default function VideoMeet() {
                 setScreenAvailable(false);
             }
 
-            // if video or audio anything has given the permission then dispaly it in the UI
+            // if video or audio anything has given the permission then display it in the UI
             if (videoPermission || audioPermission) {
                 const userMediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: videoPermission,
+                    video: videoPermission ? videoConstraints : false,
                     audio: audioPermission
                 });
 
@@ -212,8 +219,17 @@ export default function VideoMeet() {
 
     // get audio, video of user and display it
     let getUserMedia = () => {
+        const videoConstraints = {
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            frameRate: { ideal: 15, max: 30 }
+        };
+
         if ((video && videoAvailable) || (audio && audioAvailable)) {
-            navigator.mediaDevices.getUserMedia({ video: video, audio: audio })
+            navigator.mediaDevices.getUserMedia({
+                video: video ? videoConstraints : false,
+                audio: audio
+            })
                 .then(getUserMediaSuccess)
                 .then((stream) => { })
                 .catch((e) => console.log(e))
@@ -237,7 +253,10 @@ export default function VideoMeet() {
         for (let id in connections) {
             if (id === socketIdRef.current) continue
 
-            connections[id].addStream(window.localStream)
+            // Add tracks to the connection
+            window.localStream.getTracks().forEach(track => {
+                connections[id].addTrack(track, window.localStream);
+            });
 
             connections[id].createOffer().then((description) => {
                 connections[id].setLocalDescription(description)
@@ -262,7 +281,10 @@ export default function VideoMeet() {
             localVideoref.current.srcObject = window.localStream
 
             for (let id in connections) {
-                connections[id].addStream(window.localStream)
+                // Add tracks to the connection
+                window.localStream.getTracks().forEach(track => {
+                    connections[id].addTrack(track, window.localStream);
+                });
 
                 connections[id].createOffer().then((description) => {
                     connections[id].setLocalDescription(description)
@@ -299,7 +321,10 @@ export default function VideoMeet() {
         for (let id in connections) {
             if (id === socketIdRef.current) continue
 
-            connections[id].addStream(window.localStream)
+            // Add tracks to the connection
+            window.localStream.getTracks().forEach(track => {
+                connections[id].addTrack(track, window.localStream);
+            });
 
             connections[id].createOffer().then((description) => {
                 connections[id].setLocalDescription(description)
@@ -384,15 +409,14 @@ export default function VideoMeet() {
                     }
 
                     // Wait for their video stream
-                    connections[socketListId].onaddstream = (event) => {
+                    connections[socketListId].ontrack = (event) => {
                         let videoExists = videoRef.current.find(video => video.socketId === socketListId);
 
                         if (videoExists) {
-
                             // Update the stream of the existing video
                             setVideos(videos => {
                                 const updatedVideos = videos.map(video =>
-                                    video.socketId === socketListId ? { ...video, stream: event.stream } : video
+                                    video.socketId === socketListId ? { ...video, stream: event.streams[0] } : video
                                 );
                                 videoRef.current = updatedVideos;
                                 return updatedVideos;
@@ -402,7 +426,7 @@ export default function VideoMeet() {
                             console.log("CREATING NEW");
                             let newVideo = {
                                 socketId: socketListId,
-                                stream: event.stream,
+                                stream: event.streams[0],
                                 autoplay: true,
                                 playsinline: true
                             };
@@ -418,11 +442,17 @@ export default function VideoMeet() {
 
                     // Add the local video stream
                     if (window.localStream !== undefined && window.localStream !== null) {
-                        connections[socketListId].addStream(window.localStream)
+                        // Add tracks to the connection
+                        window.localStream.getTracks().forEach(track => {
+                            connections[socketListId].addTrack(track, window.localStream);
+                        });
                     } else {
                         let blackSilence = (...args) => new MediaStream([black(...args), silence()])
                         window.localStream = blackSilence()
-                        connections[socketListId].addStream(window.localStream)
+                        // Add tracks to the connection
+                        window.localStream.getTracks().forEach(track => {
+                            connections[socketListId].addTrack(track, window.localStream);
+                        });
                     }
                 })
 
@@ -431,7 +461,10 @@ export default function VideoMeet() {
                         if (id2 === socketIdRef.current) continue
 
                         try {
-                            connections[id2].addStream(window.localStream)
+                            // Add tracks to the connection
+                            window.localStream.getTracks().forEach(track => {
+                                connections[id2].addTrack(track, window.localStream);
+                            });
                         } catch (e) { }
 
                         connections[id2].createOffer().then((description) => {
@@ -568,6 +601,16 @@ export default function VideoMeet() {
                             Join Zune Meeting
                         </h2>
 
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem('token');
+                                window.location.href = 'https://main.d2fyugyyaiab9s.amplifyapp.com/auth';
+                            }}
+                            className="w-full mb-4 bg-red-600 border border-red-600 py-2 rounded-lg transition hover:bg-white hover:text-red-600 text-sm"
+                        >
+                            Logout
+                        </button>
+
                         <input
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
@@ -595,6 +638,7 @@ export default function VideoMeet() {
                                 ref={localVideoref}
                                 autoPlay
                                 muted
+                                playsInline
                                 className="w-full"
                             />
                         </div>
@@ -696,6 +740,7 @@ export default function VideoMeet() {
                                         ref={localVideoref}
                                         autoPlay
                                         muted
+                                        playsInline
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
@@ -709,6 +754,7 @@ export default function VideoMeet() {
                                                     }
                                                 }}
                                                 autoPlay
+                                                playsInline
                                                 className="w-full h-full object-cover"
                                             />
                                         )
